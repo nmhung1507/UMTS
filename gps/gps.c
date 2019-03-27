@@ -7,6 +7,7 @@
 #include "umts_serial.h"
 #include "umts.h"
 #include "string.h"
+#include "../gsm_mux/GsmMux.h"
 
 /* Private defines -----------------------------------------------------------*/
 #define PERIOD_NUM_DIGIT  9
@@ -96,6 +97,9 @@ static char char2hex(char input)
 
 GPS_State_t GPS_Init(void)
 {
+#if UMTS_USE_MUX
+	Mux_DLCSetRecvDataCallback(MUX_CHANNEL_GPS_OUTPUT, Serial_PushDataToGpsQueue);
+#endif
   /* End session GPS, don't care result */
   Umts_SendAT(UMTS_CMD_GPS_END, UMTS_OK_STR, UMTS_ERROR_STR, 
     sizeof(UMTS_CMD_GPS_END), UMTS_CMD_QGPSCFG_TIMEOUT, NULL, 0);
@@ -129,7 +133,7 @@ GPS_State_t GPS_Init(void)
   if(!Umts_SendAT(cfgTimeCmd, UMTS_OK_STR, NULL, 
               sizeof(cfgTimeCmd), UMTS_CMD_QGPS_TIMEOUT, NULL, 0))
     return GPS_ERROR;
-
+											
   /* Create task to receive and process GPS data from gGpsUartQueue */
   if(gpsTskHandle == NULL)
   {
@@ -155,7 +159,7 @@ GPS_State_t GPS_Init(void)
       return GPS_ERROR;
     }
   }
-                
+	
   return GPS_OK;
 }
 
@@ -192,8 +196,8 @@ static void GPS_Task(void  * pvParameters)
       /* Handle data */
       DequeueHandler(queueVal);
     }
-    
-    vTaskDelay((1) / portTICK_PERIOD_MS);
+
+    vTaskDelay((3) / portTICK_PERIOD_MS);
   }
 }
 
@@ -203,7 +207,7 @@ static void DequeueHandler(char queueVal)
   static char checkSum = 0;
   static char rmcData[sizeof(RmcRawMsg_t)];
   static short   index = 0, signalCnt = 0;
-  
+  printf("%c ", queueVal);
   if(queueVal == '$')
   {
     parseStep = PARSE_RCVING;

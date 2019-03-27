@@ -27,7 +27,6 @@ void Serial_Init(void);
   * @retval Result: false:OK, true: error
   */
 bool Serial_SendUART(unsigned char* pcData, int iSize);
-
 /**
   * @brief  Receive Uart
   * @param  Data buffer
@@ -49,6 +48,22 @@ bool Serial_CheckTransmitBusy(void);
   * @retval None
   */
 void Serial_SetTransmitDone(void);
+
+/**
+  * @brief  Push data to main queue
+  * @param  pu8Data: Data buffer
+  * @param  iSize: length of the buffer
+  * @retval result
+  */
+bool Serial_PushDataToMainQueue(unsigned char *pu8Data, int iSize);
+
+/**
+  * @brief  Push data to Gps queue
+  * @param  pu8Data: Data buffer
+  * @param  iSize: length of the buffer
+  * @retval result
+  */
+bool Serial_PushDataToGpsQueue(unsigned char *pu8Data, int iSize);
 
 /* Private defines -----------------------------------------------------------*/
 

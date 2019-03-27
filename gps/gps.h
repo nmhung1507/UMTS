@@ -34,7 +34,7 @@ typedef struct
   char longTail;
 }RmcInfo_t;
 /* Exported constants --------------------------------------------------------*/
-#define GPS_PERIOD_SEC  2
+#define GPS_PERIOD_SEC  3
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions prototypes ---------------------------------------------*/
 /**

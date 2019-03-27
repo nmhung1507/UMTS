@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include "task.h"
 #include "umts_serial.h"
+#include "umts_porting.h"
 
 #ifndef min
 #define min(a, b)   ((a < b) ? a : b)
@@ -258,8 +259,9 @@ static bool Mux_BufferGetFrame(Mux_BufferType *pxBuffer, Mux_FrameType *pxFrame)
      * we will update readp pointer
      */
 		for(int i = 0; i < Mux_BufferGetLength(pxBuffer); i++)
-		GSMMUX_DBG("%x,", pxBuffer->arru8Data[i]);
-		GSMMUX_DBG("\r\n");
+//		GSMMUX_DBG("%x,", pxBuffer->arru8Data[i]);
+//		GSMMUX_DBG("\r\n");
+		osDelay(10);
     pu8Data = pxBuffer->pu8ReadPtr;
 
     /* Get channel id */
@@ -440,6 +442,8 @@ bool Mux_UARTInputByteFromISR(char cRxChar)
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     if(xQueueSendToBackFromISR(gMuxUartQueue, &cRxChar, &xHigherPriorityTaskWoken) != pdTRUE) {
+    	huart6.Instance->TDR = '!';
+    	/* Queue full */
     }
 
     Mux_DataTriggerFromISR();
@@ -466,8 +470,10 @@ bool Mux_DLCOpen(uint8_t u8Idx)
 
 	uint16_t u16Size;
 
-	if(Mux_FrameCreate(&info, arru8Buffer, 16, &u16Size)) {
-		return Serial_SendUART(arru8Buffer, u16Size);
+	if(Mux_FrameCreate(&info, arru8Buffer, 16, &u16Size))
+	{
+    UMTS_OpenMainUART_LL();
+    return UMTS_Transmit_LL((uint8_t*) arru8Buffer, u16Size);
 	}
 	else {
 		GSMMUX_DBG("Make frame failed!\r\n");
@@ -504,7 +510,8 @@ bool Mux_DLCClose(uint8_t u8Idx)
 
     Mux_FrameCreate(&xInfo, arru8Buffer, 16, &u16Size);
 
-    Serial_SendUART(arru8Buffer, u16Size);
+		UMTS_OpenMainUART_LL();
+    UMTS_Transmit_LL(arru8Buffer, u16Size);
 
     return true;
 }
@@ -556,7 +563,7 @@ bool Mux_DLCSendData(uint8_t u8Idx, uint8_t *pu8Data, int iDataLen,
 		return false;
 	}
 
-	return Serial_SendUART(pu8Frame, u16Size);
+	return UMTS_Transmit_LL(pu8Frame, u16Size);
 }
 
 /**
@@ -574,7 +581,8 @@ static void Mux_SendUA(Mux_FrameType *pxFrame)
 
 	Mux_FrameCreate(&xInfo, arru8Frame, 16, &u16Size);
 
-	Serial_SendUART(arru8Frame, u16Size);
+	UMTS_OpenMainUART_LL();
+  UMTS_Transmit_LL((uint8_t*) arru8Frame, u16Size);
 }
 
 
@@ -590,7 +598,9 @@ bool Mux_Start(void)
 	}
   Mux_ClearRxBuf();
 	GSMMUX_SLEEP(500);
-	Serial_SendUART((uint8_t*) MUX_LAUNCH_CMD, strlen(MUX_LAUNCH_CMD));
+
+	UMTS_OpenMainUART_LL();
+  UMTS_Transmit_LL((uint8_t*) MUX_LAUNCH_CMD, strlen(MUX_LAUNCH_CMD));
 	GSMMUX_SLEEP(10);
 	int iLen = 0, idx = 0;
 	volatile int iTry = 0;

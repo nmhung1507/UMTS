@@ -67,6 +67,10 @@
 #define GSMMUX_CFG_STAT			0
 #endif
 
+#define MUX_CHANNEL_AT_CMD  1
+#define MUX_CHANNEL_PPPOS  2
+#define MUX_CHANNEL_GPS_OUTPUT  3
+
 typedef struct {
     uint8_t     u8Addr;
     uint8_t     u8Control;

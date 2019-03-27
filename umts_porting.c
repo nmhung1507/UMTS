@@ -43,7 +43,7 @@ void UMTS_OpenMainUART_LL(void)
 #if !UMTS_USE_MUX
 void UMTS_OpenGpsUART_LL(void)
 {
-  HAL_UART_Receive_IT(&GPS_UART_HANDLER, &rx_byte, 1);
+  HAL_UART_Receive_IT(&GPS_UART_HANDLER, &gps_rx_byte, 1);
 }
 #endif
 
@@ -58,7 +58,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   /* Set transmission flag: transfer complete */
   if(huart == &MAIN_UART_HANDLER)
   {
-		bool bHigherPriorityTaskWoken = Mux_UARTInputByteFromISR(rx_byte);
+		xHigherPriorityTaskWoken = Mux_UARTInputByteFromISR(rx_byte);
     if(xHigherPriorityTaskWoken)
     {
       taskYIELD();
@@ -90,7 +90,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     HAL_UART_Receive_IT(&GPS_UART_HANDLER, (uint8_t*)&gps_rx_byte, 1);  
   }
 #endif
-
 }
 
 bool UMTS_Transmit_LL(uint8_t *pu8Data, int iSize)

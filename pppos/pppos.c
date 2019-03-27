@@ -10,6 +10,7 @@
 #include "pppos.h"
 #include "pppos_cfg.h"
 #include "umts_serial.h"
+#include "usart.h"
 
 #if (PPPOS_CFG_MODEM_UBLOX > 0) && (PPPOS_CFG_MODEM_UC20 > 0)
 #error "SELECT ONLY 1 MODEL"
@@ -656,10 +657,11 @@ static void PPPOS_MainTask(const void * pvArgument)
 				PPPOS_Unlock();
 #endif
 			}
-//			else {
-//				/* Wait for UART rx event -> continue this loop & receive */
+			else {
+				/* Wait for UART rx event -> continue this loop & receive */
 //				PPPOS_WaitDataEvent();
-//			}
+				osDelay(3);
+			}
 		}  /* Handle GSM modem responses & disconnects loop */
 	}
 
@@ -696,7 +698,7 @@ int PPPOS_Init(bool bWaitUntilConnected)
 
 	/* Configure MUX if enabled */
 #if UMTS_USE_MUX > 0
-	Mux_Init();
+//	Mux_Init();
 	Mux_DLCSetRecvDataCallback(PPPOS_CFG_UC20_DLCI, PPPOS_PushDataToQueue);
 #endif
 
@@ -835,7 +837,7 @@ static void PPPOS_TriggerDataEvent(void)
 bool PPPOS_PushDataToQueue(uint8_t *pu8Data, int iSize)
 {
 	bool bRet = true, bHasData = false;
-
+  printf("PPOSPDTQ ");
 	for(int idx = 0; idx < iSize; idx++) {
 		if(xQueueSendToBack(gMainUartQueue, &pu8Data[idx], 0) != pdTRUE) {
 			bRet = false;

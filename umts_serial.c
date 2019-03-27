@@ -6,18 +6,23 @@
 #include "umts_porting.h"
 #include "usart.h"
 #include "umts_config.h"
+#include "..\gsm_mux\GsmMux.h"
 
 /* Private defines -----------------------------------------------------------*/
 #define UMTS_SEND_MAX_RETRY  100
-
+#if UMTS_USE_MUX
+#define SEND_FRAME_MAX_SIZE		512
+#endif
 /* Private typedef -----------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
 xQueueHandle gMainUartQueue;
 xQueueHandle gGpsUartQueue;
-
+bool bTransmitting = false;
 
 /* Private variables ---------------------------------------------------------*/
-bool bTransmitting = false;
+#if UMTS_USE_MUX
+static uint8_t pu8Frame[SEND_FRAME_MAX_SIZE];
+#endif
 
 /* Private function prototypes------------------------------------------------*/
 /* Function implementation ---------------------------------------------------*/
@@ -29,7 +34,6 @@ void Serial_Init(void)
   #if !UMTS_USE_MUX
   UMTS_OpenGpsUART_LL();
   #endif
-
 }
 
 bool Serial_SendUART(unsigned char* pcData, int iSize)
@@ -44,8 +48,13 @@ bool Serial_SendUART(unsigned char* pcData, int iSize)
       return false;
     }
   }
-  bTransmitting = true;
+  
+	#if UMTS_USE_MUX
+	return Mux_DLCSendData(MUX_CHANNEL_AT_CMD, pcData, iSize, pu8Frame, SEND_FRAME_MAX_SIZE);
+	#else
+	bTransmitting = true;
   return UMTS_Transmit_LL((uint8_t*) pcData, iSize);
+	#endif
 }
 
 unsigned short Serial_RecvUART(char* buffer, uint16_t maxLength)
@@ -70,6 +79,37 @@ unsigned short Serial_RecvUART(char* buffer, uint16_t maxLength)
   }
   
   return length;
+}
+
+bool Serial_PushDataToMainQueue(uint8_t *pu8Data, int iSize)
+{
+	bool bRet = true;
+	for(int idx = 0; idx < iSize; idx++)
+  {
+		if(xQueueSendToBack(gMainUartQueue, &pu8Data[idx], 0) != pdTRUE)
+		{
+			bRet = false;
+			break;
+		}
+	}
+
+	return bRet;
+}
+
+bool Serial_PushDataToGpsQueue(uint8_t *pu8Data, int iSize)
+{
+	bool bRet = true;
+
+	for(int idx = 0; idx < iSize; idx++)
+  {
+		if(xQueueSendToBack(gGpsUartQueue, &pu8Data[idx], 0) != pdTRUE)
+		{
+			bRet = false;
+			break;
+		}
+	}
+
+	return bRet;
 }
 
 bool Serial_CheckTransmitBusy(void)

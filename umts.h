@@ -107,7 +107,7 @@ typedef struct
 #define DEL_CHAR   0x7F
 #define DOT_CHAR  '.'
 
-#define UMTS_RESPONSE_BUF_LEN  128
+#define UMTS_RESPONSE_BUF_LEN  80
 #define UMTS_CCID_BUF_LEN  25
 #define UMTS_CIMI_BUF_LEN  20
 #define UMTS_BUF_LEN_64  64
@@ -133,7 +133,6 @@ typedef struct
  */
 int Umts_SendAT(const char * pcCmd, const char *pcResp, const char * pcResp2, 
                                   int iCmdSize, int iTimeout, char *pcResponse, int iSize);
-
 
 #ifdef __cplusplus
 }
